@@ -1,4 +1,4 @@
-# Blog OS
+# EclipseOS
 
 This repository contains the source code for the _Writing an OS in Rust_ series at [os.phil-opp.com](https://os.phil-opp.com).
 
