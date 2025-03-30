@@ -6,11 +6,11 @@
 
 extern crate alloc;
 
-use eclipse_os::println;
+use eclipse_os::{println,print};
 use eclipse_os::task::{Task, executor::Executor, keyboard};
 use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;
-use eclipse_os::vga_buffer;
+use eclipse_os::vga_buffer::{self, Color};
 
 entry_point!(kernel_main);
 
@@ -19,30 +19,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     use eclipse_os::memory::{self, BootInfoFrameAllocator};
     use x86_64::VirtAddr;
 
-    println!("");//AI ascii logo im too lazy to make one
-    println!("        #########        ");//AI ascii logo im too lazy to make one
-    println!("      ###       ###      ");//AI ascii logo im too lazy to make one
-    println!("    ###           ###    ");//AI ascii logo im too lazy to make one
-    println!("   ##               ##   ");//AI ascii logo im too lazy to make one
-    println!("  ##                 ##  ");//AI ascii logo im too lazy to make one
-    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
-    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
-    println!("##        #####        ##");//AI ascii logo im too lazy to make one
-    println!("##       ##   ##       ##");//AI ascii logo im too lazy to make one
-    println!("##      ##     ##      ##");//AI ascii logo im too lazy to make one
-    println!("##      ##     ##      ##");//AI ascii logo im too lazy to make one
-    println!("##       ##   ##       ##");//AI ascii logo im too lazy to make one
-    println!("##        #####        ##");//AI ascii logo im too lazy to make one
-    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
-    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
-    println!("  ##                 ##  ");//AI ascii logo im too lazy to make one
-    println!("   ##               ##   ");//AI ascii logo im too lazy to make one
-    println!("    ###           ###    ");//AI ascii logo im too lazy to make one
-    println!("      ###       ###      ");//AI ascii logo im too lazy to make one
-    println!("        #########        ");//AI ascii logo im too lazy to make one
-    println!("");//AI ascii logo im too lazy to make one
-    println!("        ECLIPSE OS       ");//AI ascii logo im too lazy to make one
-    println!("");//AI ascii logo im too lazy to make one
+    vga_buffer::set_color(Color::White, Color::Black);
 
     eclipse_os::init();
 
@@ -52,7 +29,22 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
     let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
 
+    // Initialize heap and print status
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+    print_status("allocater_init_heap");
+    
+    // Panic handler is already set up via the #[panic_handler] attribute
+    print_status("Panic_Handler");
+    
+    // Perform trivial assertion and print status
+    print!("Performing trivial_assertion [");
+    trivial_assertion();  // This will panic if it fails
+    vga_buffer::set_color(Color::Green, Color::Black);
+    print!("OK");
+    vga_buffer::set_color(Color::White, Color::Black);
+    print!("]\n");
+    
+    vga_buffer::test_vga();
 
     #[cfg(test)]
     test_main();
@@ -61,6 +53,15 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
     executor.run();
+}
+
+/// Helper function to print status messages with consistent formatting
+fn print_status(component: &str) {
+    print!("{} [", component);
+    vga_buffer::set_color(Color::Green, Color::Black);
+    print!("OK");
+    vga_buffer::set_color(Color::White, Color::Black);
+    print!("]\n");
 }
 
 /// This function is called on panic.
@@ -74,7 +75,7 @@ fn panic(info: &PanicInfo) -> ! {
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    eclipse_os::test_panic_handler(info)
+    eclipse_os::test_panic_handler(info);
 }
 
 async fn async_number() -> u32 {
@@ -83,10 +84,49 @@ async fn async_number() -> u32 {
 
 async fn example_task() {
     let number = async_number().await;
-    println!("async number: {}", number);
+    print!("async_number [");
+    vga_buffer::set_color(Color::Green, Color::Black);
+    print!("{}", number);
+    vga_buffer::set_color(Color::White, Color::Black);
+    print!("]\n");
+    print_ascii();
+}
+
+fn print_ascii() {
+    vga_buffer::set_color(Color::Purple, Color::Black);
+    println!("");//AI ascii logo im too lazy to make one
+    println!("         #######         ");//AI ascii logo im too lazy to make one
+    println!("      ###       ###      ");//AI ascii logo im too lazy to make one
+    println!("    ###           ###    ");//AI ascii logo im too lazy to make one
+    println!("   ##               ##   ");//AI ascii logo im too lazy to make one
+    println!("  ##                 ##  ");//AI ascii logo im too lazy to make one
+    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
+    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
+    println!("##         ###         ##");//AI ascii logo im too lazy to make one
+    println!("##       ##   ##       ##");//AI ascii logo im too lazy to make one
+    println!("##      ##     ##      ##");//AI ascii logo im too lazy to make one
+    println!("##      ##     ##      ##");//AI ascii logo im too lazy to make one
+    println!("##       ##   ##       ##");//AI ascii logo im too lazy to make one
+    println!("##         ###         ##");//AI ascii logo im too lazy to make one
+    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
+    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
+    println!("  ##                 ##  ");//AI ascii logo im too lazy to make one
+    println!("   ##               ##   ");//AI ascii logo im too lazy to make one
+    println!("    ###           ###    ");//AI ascii logo im too lazy to make one
+    println!("      ###       ###      ");//AI ascii logo im too lazy to make one
+    println!("         #######         ");//AI ascii logo im too lazy to make one
+    vga_buffer::set_color(Color::Blue, Color::Black);
+    println!("");//AI ascii logo im too lazy to make one
+    println!("       =ECLIPSE OS=      ");//AI ascii logo im too lazy to make one
+    println!("");//AI ascii logo im too lazy to make one
+    vga_buffer::set_color(Color::White, Color::Black);
 }
 
 #[test_case]
+fn trivial_assertion() {
+    assert_eq!(1, 1);
+}
+
 fn trivial_assertion() {
     assert_eq!(1, 1);
 }

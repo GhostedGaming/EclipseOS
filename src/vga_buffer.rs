@@ -14,10 +14,10 @@ pub enum CursorStyle {
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
-        color_code: ColorCode::new(Color::Yellow, Color::Black),
+        color_code: ColorCode::new(Color::White, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
         cursor_visible: true,
-        cursor_color: ColorCode::new(Color::Black, Color::Yellow), // Inverted colors for cursor
+        cursor_color: ColorCode::new(Color::Black, Color::LightGray), // Inverted colors for cursor
         cursor_style: CursorStyle::Block, // Default to block cursor
     });
 }
@@ -32,7 +32,7 @@ pub enum Color {
     Green = 2,
     Cyan = 3,
     Red = 4,
-    Magenta = 5,
+    Purple = 5,
     Brown = 6,
     LightGray = 7,
     DarkGray = 8,
@@ -90,9 +90,10 @@ pub struct Writer {
 }
 
 impl Writer {
-    /// Writes an ASCII byte to the buffer.
-    ///
-    /// Wraps lines at `BUFFER_WIDTH`. Supports the `\n` newline character.
+    pub fn set_color(&mut self, foreground: Color, background: Color) {
+        self.color_code = ColorCode::new(foreground, background);
+    }
+    
     pub fn write_byte(&mut self, byte: u8) {
         // Erase cursor before writing
         self.erase_cursor();
@@ -297,6 +298,14 @@ impl fmt::Write for Writer {
     }
 }
 
+pub fn set_color(foreground: Color, background: Color) {
+    use x86_64::instructions::interrupts;
+    
+    interrupts::without_interrupts(|| {
+        WRITER.lock().set_color(foreground, background);
+    });
+}
+
 /// Like the `print!` macro in the standard library, but prints to the VGA text buffer.
 #[macro_export]
 macro_rules! print {
@@ -387,4 +396,31 @@ fn test_println_output() {
             assert_eq!(char::from(screen_char.ascii_character), c);
         }
     });
+}
+
+pub fn test_vga() {
+    let colors = [
+        Color::Black, Color::Blue, Color::Green, Color::Cyan,
+        Color::Red, Color::Purple, Color::Brown, Color::LightGray,
+        Color::DarkGray, Color::LightBlue, Color::LightGreen, Color::LightCyan,
+        Color::LightRed, Color::Pink, Color::Yellow, Color::White
+    ];
+
+    for fg_color in colors.iter() {
+        set_color(*fg_color, Color::Black);
+        println!("#");
+    }
+
+    for bg_color in colors.iter() {
+        set_color(Color::White, *bg_color);
+        println!(" ");
+    }
+    
+    set_color(Color::White, Color::Black);
+
+    print!("\nvga_buffer [");
+    set_color(Color::Green, Color::Black);
+    print!("OK");
+    set_color(Color::White, Color::Black);
+    print!("]\n");
 }
