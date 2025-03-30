@@ -1,16 +1,24 @@
 use core::fmt;
+use futures_util::future::select;
 use lazy_static::lazy_static;
 use spin::Mutex;
 use volatile::Volatile;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CursorStyle {
+    Block,      // Full square/block cursor
+    Underline,  // Underline cursor
+    Invert,     // Current implementation (inverted colors)
+}
+
 lazy_static! {
-    /// A global `Writer` instance that can be used for printing to the VGA text buffer.
-    ///
-    /// Used by the `print!` and `println!` macros.
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
+        cursor_visible: true,
+        cursor_color: ColorCode::new(Color::Black, Color::Yellow), // Inverted colors for cursor
+        cursor_style: CursorStyle::Block, // Default to block cursor
     });
 }
 
@@ -76,6 +84,9 @@ pub struct Writer {
     column_position: usize,
     color_code: ColorCode,
     buffer: &'static mut Buffer,
+    cursor_visible: bool,
+    cursor_color: ColorCode,
+    cursor_style: CursorStyle,
 }
 
 impl Writer {
@@ -83,16 +94,19 @@ impl Writer {
     ///
     /// Wraps lines at `BUFFER_WIDTH`. Supports the `\n` newline character.
     pub fn write_byte(&mut self, byte: u8) {
+        // Erase cursor before writing
+        self.erase_cursor();
+        
         match byte {
             b'\n' => self.new_line(),
             byte => {
                 if self.column_position >= BUFFER_WIDTH {
                     self.new_line();
                 }
-
+    
                 let row = BUFFER_HEIGHT - 1;
                 let col = self.column_position;
-
+    
                 let color_code = self.color_code;
                 self.buffer.chars[row][col].write(ScreenChar {
                     ascii_character: byte,
@@ -100,6 +114,11 @@ impl Writer {
                 });
                 self.column_position += 1;
             }
+        }
+        
+        // Draw cursor after writing
+        if self.cursor_visible {
+            self.draw_cursor();
         }
     }
 
@@ -141,6 +160,134 @@ impl Writer {
             self.buffer.chars[row][col].write(blank);
         }
     }
+
+    pub fn handle_backspace(&mut self) {
+        if self.column_position > 0 {
+            // Erase cursor before modifying
+            self.erase_cursor();
+            
+            // Move cursor back one position
+            self.column_position -= 1;
+            
+            // Create a blank ScreenChar with the current color code
+            let blank = ScreenChar {
+                ascii_character: b' ',
+                color_code: self.color_code,
+            };
+            
+            // Write the blank character to erase the previous character
+            self.buffer.chars[BUFFER_HEIGHT - 1][self.column_position].write(blank);
+            
+            // Redraw cursor at new position
+            if self.cursor_visible {
+                self.draw_cursor();
+            }
+        }
+    }
+
+    pub fn draw_cursor(&mut self) {
+        let row = BUFFER_HEIGHT - 1;
+        let col = self.column_position;
+        
+        // Get the current character at cursor position
+        let current_char = self.buffer.chars[row][col].read();
+        
+        let cursor_char = match self.cursor_style {
+            CursorStyle::Block => {
+                // For block cursor, use space character with inverted colors
+                ScreenChar {
+                    ascii_character: b' ',
+                    color_code: ColorCode::new(Color::Black, Color::Yellow), // Fully inverted block
+                }
+            },
+            CursorStyle::Underline => {
+                // For underline, use underscore character
+                ScreenChar {
+                    ascii_character: b'_',
+                    color_code: self.cursor_color,
+                }
+            },
+            CursorStyle::Invert => {
+                // Current implementation (inverted colors)
+                ScreenChar {
+                    ascii_character: current_char.ascii_character,
+                    color_code: self.cursor_color,
+                }
+            },
+        };
+        
+        // Draw the cursor
+        self.buffer.chars[row][col].write(cursor_char);
+    }
+    
+    /// Erases the cursor by restoring the original character
+    pub fn erase_cursor(&mut self) {
+        let row = BUFFER_HEIGHT - 1;
+        let col = self.column_position;
+        
+        if col < BUFFER_WIDTH {
+            // Get the current character at cursor position
+            let current_char = self.buffer.chars[row][col].read();
+            
+            // Restore the character with normal colors
+            let normal_char = ScreenChar {
+                ascii_character: if self.cursor_style == CursorStyle::Block || self.cursor_style == CursorStyle::Underline {
+                    b' ' // For block or underline cursor, restore with space
+                } else {
+                    current_char.ascii_character // For inverted cursor, keep the character
+                },
+                color_code: self.color_code,
+            };
+            
+            // Draw the normal character
+            self.buffer.chars[row][col].write(normal_char);
+        }
+    }
+    
+    /// Toggles cursor visibility (for blinking)
+    pub fn toggle_cursor(&mut self) {
+        if self.cursor_visible {
+            self.erase_cursor();
+        } else {
+            self.draw_cursor();
+        }
+        self.cursor_visible = !self.cursor_visible;
+    }
+    
+    /// Sets the cursor visibility
+    pub fn set_cursor_visibility(&mut self, visible: bool) {
+        if visible != self.cursor_visible {
+            if visible {
+                self.draw_cursor();
+            } else {
+                self.erase_cursor();
+            }
+            self.cursor_visible = visible;
+        }
+    }
+    
+    /// Moves the cursor to a new position
+    pub fn move_cursor(&mut self, new_col: usize) {
+        // Erase cursor at current position
+        self.erase_cursor();
+        
+        // Update position
+        self.column_position = new_col;
+        
+        // Draw cursor at new position
+        if self.cursor_visible {
+            self.draw_cursor();
+        }
+    }
+    
+    /// Sets the cursor style
+    pub fn set_cursor_style(&mut self, style: CursorStyle) {
+        self.erase_cursor();
+        self.cursor_style = style;
+        if self.cursor_visible {
+            self.draw_cursor();
+        }
+    }
 }
 
 impl fmt::Write for Writer {
@@ -172,6 +319,45 @@ pub fn _print(args: fmt::Arguments) {
 
     interrupts::without_interrupts(|| {
         WRITER.lock().write_fmt(args).unwrap();
+    });
+}
+
+pub fn backspace() {
+    use x86_64::instructions::interrupts;
+    
+    interrupts::without_interrupts(|| {
+        WRITER.lock().handle_backspace();
+    });
+}
+
+/// Sets the cursor style globally
+pub fn set_cursor_style(style: CursorStyle) {
+    use x86_64::instructions::interrupts;
+    
+    interrupts::without_interrupts(|| {
+        WRITER.lock().set_cursor_style(style);
+    });
+}
+
+/// Sets the cursor visibility globally
+pub fn set_cursor_visibility(visible: bool) {
+    use x86_64::instructions::interrupts;
+    
+    interrupts::without_interrupts(|| {
+        WRITER.lock().set_cursor_visibility(visible);
+    });
+}
+
+/// Force redraw of the cursor
+pub fn redraw_cursor() {
+    use x86_64::instructions::interrupts;
+    
+    interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        writer.erase_cursor();
+        if writer.cursor_visible {
+            writer.draw_cursor();
+        }
     });
 }
 

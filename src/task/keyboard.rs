@@ -1,4 +1,5 @@
 use crate::{print, println};
+use crate::vga_buffer::{self, Writer};
 use conquer_once::spin::OnceCell;
 use core::{
     pin::Pin,
@@ -9,7 +10,7 @@ use futures_util::{
     stream::{Stream, StreamExt},
     task::AtomicWaker,
 };
-use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
+use pc_keyboard::{layouts, DecodedKey, HandleControl, KeyCode, Keyboard, ScancodeSet1};
 
 static SCANCODE_QUEUE: OnceCell<ArrayQueue<u8>> = OnceCell::uninit();
 static WAKER: AtomicWaker = AtomicWaker::new();
@@ -78,8 +79,50 @@ pub async fn print_keypresses() {
         if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
             if let Some(key) = keyboard.process_keyevent(key_event) {
                 match key {
-                    DecodedKey::Unicode(character) => print!("{}", character),
-                    DecodedKey::RawKey(key) => print!("{:?}", key),
+                    DecodedKey::Unicode(character) => {
+                        // Don't print backspace character
+                        if character != '\u{0008}' && character != '\u{007F}' { 
+                            print!("{}", character);
+                        } else {
+                            // Call backspace function instead
+                            crate::vga_buffer::backspace();
+                        }
+                        if character == '\u{001B}'{
+
+                        }
+                    },
+                    DecodedKey::RawKey(key) => {
+                        match key {
+                            KeyCode::Backspace => {
+                                // Call backspace function
+                                crate::vga_buffer::backspace();
+                            },
+                            KeyCode::Delete => {
+                                // Call backspace function
+                                crate::vga_buffer::backspace();
+                            },
+                            KeyCode::Tab => {
+                                print!("    ");
+                            },
+                            KeyCode::LShift => {},
+                            KeyCode::RShift => {},
+                            KeyCode::LControl => {},
+                            KeyCode::RControl => {},
+                            KeyCode::LAlt => {},
+                            KeyCode::RAltGr => {},
+                            KeyCode::ArrowUp => {},
+                            KeyCode::ArrowDown => {},
+                            KeyCode::ArrowLeft => {},
+                            KeyCode::ArrowRight => {},
+                            KeyCode::Escape => {},
+                            KeyCode::Home => {},
+                            KeyCode::PageUp => {},
+                            KeyCode::PageDown => {},
+                            KeyCode::CapsLock => {},
+
+                            _ => print!("{:?}", key),
+                        }
+                    }
                 }
             }
         }

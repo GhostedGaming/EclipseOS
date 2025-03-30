@@ -21,24 +21,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
-name = "blog_os"
-version = "0.1.0"
-dependencies = [
- "bootloader",
- "conquer-once",
- "crossbeam-queue",
- "futures-util",
- "lazy_static",
- "linked_list_allocator",
- "pc-keyboard",
- "pic8259",
- "spin",
- "uart_16550",
- "volatile 0.2.7",
- "x86_64",
-]
-
-[[package]]
 name = "bootloader"
 version = "0.9.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -73,6 +55,24 @@ name = "crossbeam-utils"
 version = "0.8.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22ec99545bb0ed0ea7bb9b8e1e9122ea386ff8a48c0922e43f36d45ab09e0e80"
+
+[[package]]
+name = "eclipse_os"
+version = "0.1.0"
+dependencies = [
+ "bootloader",
+ "conquer-once",
+ "crossbeam-queue",
+ "futures-util",
+ "lazy_static",
+ "linked_list_allocator",
+ "pc-keyboard",
+ "pic8259",
+ "spin",
+ "uart_16550",
+ "volatile 0.2.7",
+ "x86_64",
+]
 
 [[package]]
 name = "futures-core"
