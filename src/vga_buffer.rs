@@ -4,6 +4,8 @@ use lazy_static::lazy_static;
 use spin::Mutex;
 use volatile::Volatile;
 
+use crate::{serial, serial_println};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CursorStyle {
     Block,      // Full square/block cursor
@@ -370,6 +372,23 @@ pub fn redraw_cursor() {
     });
 }
 
+pub fn clear_screen() {
+    use x86_64::instructions::interrupts;
+    
+    interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        for row in 0..BUFFER_HEIGHT {
+            writer.clear_row(row);
+        }
+        writer.column_position = 0;
+        
+        // Redraw cursor if needed
+        if writer.cursor_visible {
+            writer.draw_cursor();
+        }
+    });
+}
+
 #[test_case]
 fn test_println_simple() {
     println!("test_println_simple output");
@@ -413,7 +432,9 @@ pub fn test_vga() {
 
     for bg_color in colors.iter() {
         set_color(Color::White, *bg_color);
-        println!(" ");
+        print!(" ");
+        set_color(Color::White, Color::Black);
+        print!("\n")
     }
     
     set_color(Color::White, Color::Black);

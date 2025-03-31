@@ -11,6 +11,7 @@ use eclipse_os::task::{Task, executor::Executor, keyboard};
 use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;
 use eclipse_os::vga_buffer::{self, Color};
+use eclipse_os::shell::Shell;
 
 entry_point!(kernel_main);
 
@@ -33,7 +34,6 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
     print_status("allocater_init_heap");
     
-    // Panic handler is already set up via the #[panic_handler] attribute
     print_status("Panic_Handler");
     
     // Perform trivial assertion and print status
@@ -44,6 +44,8 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     vga_buffer::set_color(Color::White, Color::Black);
     print!("]\n");
     
+    eclipse_os::task::keyboard::init_shell();
+
     vga_buffer::test_vga();
 
     #[cfg(test)]
@@ -94,31 +96,30 @@ async fn example_task() {
 
 fn print_ascii() {
     vga_buffer::set_color(Color::Purple, Color::Black);
-    println!("");//AI ascii logo im too lazy to make one
-    println!("         #######         ");//AI ascii logo im too lazy to make one
-    println!("      ###       ###      ");//AI ascii logo im too lazy to make one
-    println!("    ###           ###    ");//AI ascii logo im too lazy to make one
-    println!("   ##               ##   ");//AI ascii logo im too lazy to make one
-    println!("  ##                 ##  ");//AI ascii logo im too lazy to make one
-    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
-    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
-    println!("##         ###         ##");//AI ascii logo im too lazy to make one
-    println!("##       ##   ##       ##");//AI ascii logo im too lazy to make one
-    println!("##      ##     ##      ##");//AI ascii logo im too lazy to make one
-    println!("##      ##     ##      ##");//AI ascii logo im too lazy to make one
-    println!("##       ##   ##       ##");//AI ascii logo im too lazy to make one
-    println!("##         ###         ##");//AI ascii logo im too lazy to make one
-    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
-    println!(" ##                   ## ");//AI ascii logo im too lazy to make one
-    println!("  ##                 ##  ");//AI ascii logo im too lazy to make one
-    println!("   ##               ##   ");//AI ascii logo im too lazy to make one
-    println!("    ###           ###    ");//AI ascii logo im too lazy to make one
-    println!("      ###       ###      ");//AI ascii logo im too lazy to make one
-    println!("         #######         ");//AI ascii logo im too lazy to make one
-    vga_buffer::set_color(Color::Blue, Color::Black);
-    println!("");//AI ascii logo im too lazy to make one
-    println!("       =ECLIPSE OS=      ");//AI ascii logo im too lazy to make one
-    println!("");//AI ascii logo im too lazy to make one
+    println!("\n \n");//AI ascii logo im too lazy to make one
+    println!("        .,****,.");
+    println!("     .*%%%%%%%%%%*.");
+    println!("   .*%%%%%%%%%%%%%%*");
+    println!("  *%%%%%%%%%%%%%%%%%*");
+    println!(" *%%%%%%%%%%%*****%%%*");
+    println!("*%%%%%%%%%%*     .*%%*");
+    println!("*%%%%%%%%%*        .%%*");
+    println!("*%%%%%%%%*.         *%*");
+    println!("*%%%%%%%%*          *%*");
+    println!("*%%%%%%%%*          *%*");
+    println!("*%%%%%%%%*.         *%*");
+    println!("*%%%%%%%%%*.       .%%*");
+    println!("*%%%%%%%%%%*.     .%%%*");
+    println!(" *%%%%%%%%%%%%*****%%%*");
+    println!("  *%%%%%%%%%%%%%%%%%*");
+    println!("   .*%%%%%%%%%%%%%*");
+    println!("     .*%%%%%%%%%*.");
+    println!("        .,****,.");
+    println!("");
+    vga_buffer::set_color(Color::Cyan, Color::Black);
+    println!("");
+    println!("       =ECLIPSE OS=      ");
+    println!("");
     vga_buffer::set_color(Color::White, Color::Black);
 }
 
