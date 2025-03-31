@@ -18,7 +18,7 @@ pub mod task;
 pub mod vga_buffer;
 pub mod shell;
 pub mod time;
-
+pub mod shutdown;
 
 pub fn init() {
     gdt::init();

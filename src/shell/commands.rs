@@ -1,19 +1,22 @@
 use alloc::string::String;
 use core::str::SplitWhitespace;
-use crate::{print, println};
+use crate::{print, println, QemuExitCode, exit_qemu};
 use crate::vga_buffer::{self, Color, clear_screen};
 use crate::time;
+use crate::shutdown;
 
-pub fn help() {
-    println!("Available commands:");
-    println!("  help     - Display this help message");
-    println!("  echo     - Display a line of text");
-    println!("  clear    - Clear the screen");
-    println!("  about    - Display information about EclipseOS");
-    println!("  version  - Display the current version of EclipseOS");
-    println!("  help     - Displays \"Hello\" ");
-    println!("  time     - Displays current time");
-    println!("  disk     - Displays a list of different disk drives");
+
+pub fn about() {
+    vga_buffer::set_color(Color::Cyan, Color::Black);
+    println!("\nEclipseOS");
+    vga_buffer::set_color(Color::White, Color::Black);
+    println!("A simple operating system written in Rust");
+    println!("Developed as a learning project");
+    println!("Type 'help' for available commands");
+}
+
+pub fn clear() {
+    clear_screen();
 }
 
 pub fn echo(mut args: SplitWhitespace) {
@@ -27,21 +30,29 @@ pub fn echo(mut args: SplitWhitespace) {
     println!("{}", output.trim_end());
 }
 
-pub fn clear() {
-    clear_screen();
-}
-
-pub fn about() {
-    vga_buffer::set_color(Color::Cyan, Color::Black);
-    println!("\nEclipseOS");
-    vga_buffer::set_color(Color::White, Color::Black);
-    println!("A simple operating system written in Rust");
-    println!("Developed as a learning project");
-    println!("Type 'help' for available commands");
-}
-
 pub fn hello() {
     println!("Hello");
+}
+
+pub fn help() {
+    println!("Available commands:");
+    println!("  about    - Display information about EclipseOS");
+    println!("  clear    - Clear the screen");
+    println!("  disk     - Displays a list of different disk drives");
+    println!("  echo     - Display a line of text");
+    println!("  hello    - Displays \"Hello\"");
+    println!("  help     - Display this help message");
+    println!("  qemu_shutdown - Shutdown if you're in QEMU");
+    println!("  shutdown - Shutsdown the computer");
+    println!("  time     - Displays current time");
+    println!("  version  - Display the current version of EclipseOS");
+}
+
+pub fn shutdown() {
+    shutdown::shutdown();
+}
+pub fn qemu_shutdown() {
+    exit_qemu(QemuExitCode::Success);
 }
 
 pub fn version() {
