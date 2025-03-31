@@ -38,13 +38,12 @@ pub fn help() {
     println!("Available commands:");
     println!("  about    - Display information about EclipseOS");
     println!("  clear    - Clear the screen");
-    println!("  disk     - Displays a list of different disk drives");
+    println!("  disk(wip)     - Displays a list of different disk drives");
     println!("  echo     - Display a line of text");
     println!("  hello    - Displays \"Hello\"");
     println!("  help     - Display this help message");
-    println!("  qemu_shutdown - Shutdown if you're in QEMU");
     println!("  shutdown - Shutsdown the computer");
-    println!("  time     - Displays current time");
+    println!("  time(wip)     - Displays current time");
     println!("  version  - Display the current version of EclipseOS");
 }
 
@@ -53,6 +52,14 @@ pub fn shutdown() {
 }
 pub fn qemu_shutdown() {
     exit_qemu(QemuExitCode::Success);
+}
+
+pub fn time() {
+    let time_str = time::format_time();
+    let date_str = time::format_date();
+
+    println!("current date: {}!",date_str);
+    println!("current time: {}!",time_str);
 }
 
 pub fn version() {

@@ -61,7 +61,8 @@ impl Shell {
             "version" => commands::version(),
             "hello" => commands::hello(),
             "shutdown" => commands::shutdown(),
-            "qemu_shutdown" => exit_qemu(QemuExitCode::Success),
+            "qemu_shutdown" => exit_qemu(QemuExitCode::Failed),
+            "time" => commands::time(),
             _ => println!("Unknown command: {}. Type 'help' for available commands.", command),
         }
     }

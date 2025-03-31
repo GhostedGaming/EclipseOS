@@ -12,6 +12,7 @@ use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;
 use eclipse_os::vga_buffer::{self, Color};
 use eclipse_os::shell::Shell;
+use eclipse_os::time;
 
 entry_point!(kernel_main);
 
@@ -47,6 +48,13 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     eclipse_os::task::keyboard::init_shell();
 
     vga_buffer::test_vga();
+
+    print!("initating time [");
+    time::init();
+    vga_buffer::set_color(Color::Green, Color::Black);
+    print!("OK");
+    vga_buffer::set_color(Color::White, Color::Black);
+    print!("]\n");
 
     #[cfg(test)]
     test_main();
