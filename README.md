@@ -1,5 +1,3 @@
-Fork from phill-opp's blog_os
-
 # eclipse_os (Async/Await)
 
 [![Build Status](https://github.com/phil-opp/eclipse_os/workflows/Code/badge.svg?branch=post-12)](https://github.com/phil-opp/eclipse_os/actions?query=workflow%3A%22Code%22+branch%3Apost-12)
@@ -12,20 +10,19 @@ This repository contains the source code for the [Async/Await][post] post of the
 
 ## Building
 
-Install qemu using this command for windows:
+Install QEMU using this command for Windows:
+```sh
+winget install --id=SoftwareFreedomConservancy.QEMU -e
 ```
-winget install --id=SoftwareFreedomConservancy.QEMU  -e
-```
-or use this command for linux:
-```
+or use this command for Linux:
+```sh
 sudo apt-get install qemu-system
 ```
 
-This project requires a nightly version of Rust because it uses some unstable features. At least nightly _2020-07-15_ is required for building. You might need to run `rustup update nightly --force` to update to the latest nightly even if some components such as `rustfmt` are missing it.
+This project requires a nightly version of Rust because it uses some unstable features. At least nightly _2020-07-15_ is required for building. You might need to run `rustup update nightly --force` to update to the latest nightly even if some components such as `rustfmt` are missing.
 
 You can build the project by running:
-
-```
+```sh
 cargo build
 ```
 
@@ -33,13 +30,12 @@ To create a bootable disk image from the compiled kernel, you need to install th
 
 [`bootimage`]: https://github.com/rust-osdev/bootimage
 
-```
+```sh
 cargo install bootimage
 ```
 
 After installing, you can create the bootable disk image by running:
-
-```
+```sh
 cargo bootimage
 ```
 
@@ -53,35 +49,37 @@ You can run the disk image in [QEMU] through:
 
 [QEMU]: https://www.qemu.org/
 
-```
+```sh
 cargo run
 ```
 
 [QEMU] and the [`bootimage`] tool need to be installed for this.
 
-I also made a sh script to run both of these:
-For linux.
-```
+I also made a shell script to run both of these:
+For Linux:
+```sh
 chmod +x ./run.sh
 ./run.sh
 ```
-For windows.
-```
+For Windows:
+```sh
 .\run.sh
 ```
 
-You can also write the image to an USB stick for booting it on a real machine. On Linux, the command for this is:
-
-```
+You can also write the image to a USB stick for booting it on a real machine. On Linux, the command for this is:
+```sh
 dd if=target/x86_64-eclipse_os/debug/bootimage-eclipse_os.bin of=/dev/sdX && sync
 ```
-You can also download belena etcher which is excellent for writing bootable images to drives.
+You can also download Balena Etcher, which is excellent for writing bootable images to drives.
 
 Where `sdX` is the device name of your USB stick. **Be careful** to choose the correct device name, because everything on that device is overwritten.
 
 ## Testing
 
-To run the unit and integration tests, execute `cargo xtest`.
+To run the unit and integration tests, execute:
+```sh
+cargo xtest
+```
 
 ## License
 
