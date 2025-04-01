@@ -53,7 +53,6 @@ pub struct DirEntry {
     pub rec_len: u16,            // Record length
     pub name_len: u8,            // Name length
     pub file_type: u8,           // File type
-    // Name follows (variable length)
 }
 
 // File types

@@ -62,6 +62,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
+    executor.spawn(Task::new(time::time_sync_task()));
     executor.run();
 }
 
@@ -104,7 +105,7 @@ async fn example_task() {
 
 fn print_ascii() {
     vga_buffer::set_color(Color::Purple, Color::Black);
-    println!("\n \n");//AI ascii logo im too lazy to make one
+    println!("\n \n");
     println!("        .,****,.");
     println!("     .*%%%%%%%%%%*.");
     println!("   .*%%%%%%%%%%%%%%*");

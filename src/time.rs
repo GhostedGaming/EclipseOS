@@ -1,10 +1,15 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 use x86_64::instructions::port::Port;
+use alloc::string::String;
+use core::fmt::Write;
+use crate::task::{Task, executor::Executor};
 
 // Store system time as seconds since epoch (Unix timestamp)
 static SYSTEM_TIME: AtomicU64 = AtomicU64::new(0);
 // Store ticks since boot
 static TICKS_SINCE_BOOT: AtomicU64 = AtomicU64::new(0);
+// tick per second
+static TICKS_PER_SECOND: u64 = 15;
 
 // CMOS RTC registers
 const CMOS_ADDRESS: u16 = 0x70;
@@ -26,8 +31,7 @@ pub fn init() {
     // Read initial time from RTC
     let time = read_rtc_time();
     
-    // If time is unreasonably low (e.g., 1970), set a more reasonable default
-    if time < 1600000000 { // Roughly year 2020
+    if time < 1743471294 { // Roughly year 2020
         // Use a hardcoded recent timestamp as fallback
         SYSTEM_TIME.store(1672531200, Ordering::SeqCst); // Jan 1, 2023
     } else {
@@ -40,21 +44,10 @@ pub fn tick() {
     let ticks = TICKS_SINCE_BOOT.fetch_add(1, Ordering::SeqCst) + 1;
     
     // Update system time every second (assuming timer fires at 100Hz)
-    if ticks % 50 == 0 {
-        if ticks % 6000 == 0 {
-            let rtc_time = read_rtc_time();
-            if rtc_time > 1600000000 { 
-                SYSTEM_TIME.store(rtc_time, Ordering::SeqCst);
-            } else {
-                // Just increment normally if RTC gives unreasonable value
-                let current = SYSTEM_TIME.load(Ordering::SeqCst);
-                SYSTEM_TIME.store(current + 1, Ordering::SeqCst);
-            }
-        } else {
-            // Normal second increment
-            let current = SYSTEM_TIME.load(Ordering::SeqCst);
-            SYSTEM_TIME.store(current + 1, Ordering::SeqCst);
-        }
+    if ticks % TICKS_PER_SECOND == 0 {
+        // Normal second increment
+        let current = SYSTEM_TIME.load(Ordering::SeqCst);
+        SYSTEM_TIME.store(current + 1, Ordering::SeqCst);
     }
 }
 
@@ -66,6 +59,27 @@ pub fn current_time() -> u64 {
 /// Get ticks since boot
 pub fn ticks() -> u64 {
     TICKS_SINCE_BOOT.load(Ordering::SeqCst)
+}
+
+/// Async task to periodically sync with RTC
+pub async fn time_sync_task() {
+    loop {
+        // Sync with RTC every minute
+        let rtc_time = read_rtc_time();
+        if rtc_time > 1600000000 {
+            SYSTEM_TIME.store(rtc_time, Ordering::SeqCst);
+        }
+        
+        // Sleep for 60 seconds before next sync
+        // This is a simple async sleep implementation
+        let current_ticks = ticks();
+        let target_ticks = current_ticks + 6000; // 60 seconds at 100Hz
+        
+        while ticks() < target_ticks {
+            // Yield to other tasks
+            crate::task::yield_now().await;
+        }
+    }
 }
 
 /// Read time from RTC (Real-Time Clock)
@@ -146,7 +160,6 @@ fn wait_for_rtc() {
     }
 }
 
-
 /// Read a value from CMOS/RTC register
 fn read_cmos_register(register: u8) -> u8 {
     let mut address_port = Port::new(CMOS_ADDRESS);
@@ -157,7 +170,7 @@ fn read_cmos_register(register: u8) -> u8 {
         address_port.write(register);
         
         // Read the value
-        data_port.read() // Remove the generic parameter
+        data_port.read()
     }
 }
 
@@ -172,10 +185,7 @@ fn is_leap_year(year: u16) -> bool {
 }
 
 /// Format time as a string (HH:MM:SS)
-pub fn format_time() -> alloc::string::String {
-    use alloc::string::String;
-    use core::fmt::Write;
-    
+pub fn format_time() -> String {
     let timestamp = current_time();
     
     // Extract hours, minutes, seconds
@@ -190,14 +200,10 @@ pub fn format_time() -> alloc::string::String {
 }
 
 /// Format date as a string (YYYY-MM-DD)
-pub fn format_date() -> alloc::string::String {
-    use alloc::string::String;
-    use core::fmt::Write;
-    
+pub fn format_date() -> String {
     let timestamp = current_time();
     
     // This is a simplified algorithm to extract date components
-    // A more accurate implementation would account for leap years properly
     
     // Start from 1970-01-01
     let mut year = 1970;

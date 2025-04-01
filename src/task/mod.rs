@@ -15,6 +15,10 @@ pub struct Task {
     future: Pin<Box<dyn Future<Output = ()>>>,
 }
 
+pub struct YieldNow {
+    yielded: bool,
+}
+
 impl Task {
     pub fn new(future: impl Future<Output = ()> + 'static) -> Task {
         Task {
@@ -28,6 +32,26 @@ impl Task {
     }
 }
 
+impl Future for YieldNow {
+    type Output = ();
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if self.yielded {
+            Poll::Ready(())
+        } else {
+            self.yielded = true;
+            cx.waker().wake_by_ref();
+            Poll::Pending
+        }
+    }
+}
+
+impl YieldNow {
+    fn new() -> Self {
+        YieldNow { yielded: false }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct TaskId(u64);
 
@@ -36,4 +60,8 @@ impl TaskId {
         static NEXT_ID: AtomicU64 = AtomicU64::new(0);
         TaskId(NEXT_ID.fetch_add(1, Ordering::Relaxed))
     }
+}
+
+pub async fn yield_now() {
+    YieldNow::new().await
 }
