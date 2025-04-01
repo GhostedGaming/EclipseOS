@@ -6,7 +6,10 @@ This repository contains the source code for the [Async/Await][post] post of the
 
 [post]: https://os.phil-opp.com/async-await/
 
-**Check out the [master branch](https://github.com/phil-opp/eclipse_os) for more information.**
+**Check out the [master branch](https://github.com/phil-opp/eclipse_os) for more information,**
+**or visit the website that shows you how to make a lot of this.**
+
+## I am also working on a github page for the OS which contains the iso file and everything you need to know.
 
 ## Building
 
